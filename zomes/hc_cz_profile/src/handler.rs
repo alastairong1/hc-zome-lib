@@ -69,13 +69,28 @@ pub fn __get_profile(agent_address: AgentPubKey) -> ProfileResult<Profile> {
         None => return Ok(default_profile),
     };
 
-    if let Some(target_entry) = latest_link_info.target.into_entry_hash() {
-        match hc_utils::get_latest_entry(target_entry, Default::default()) {
-            Ok(e) => Ok(e.try_into()?),
-            _ => Ok(default_profile),
+
+    match hc_utils::get_latest_records(vec![latest_link_info], Default::default()) {
+        Ok(mut record_link_pairs) => {
+            // If no records came back, use the default profile.
+            if record_link_pairs.is_empty() {
+                return Ok(default_profile);
+            }
+            
+            let (record, _link) = record_link_pairs.remove(0);
+
+            match <Option<Entry>>::from(record) {
+                Some(entry) => {
+                    let profile: Profile = entry.try_into()?;
+                    Ok(profile)
+                }
+                None => {
+                            // Fallback / default if no Entry in the Record
+                            Ok(default_profile)
+                        }
+            }
         }
-    } else {
-        Ok(default_profile)
+        _ => Ok(default_profile)
     }
 }
 
