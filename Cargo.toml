@@ -16,6 +16,6 @@ opt-level = "z"
 [workspace.dependencies]
 hdi = "=0.6.2"
 hdk = "=0.5.2"
-holochain_zome_types = "0.4.0-dev.11"
-hc_utils = "=0.5.2"
+holochain_zome_types = "0.5.2"
+hc_utils = { git = "https://github.com/alastairong1/hc-utils.git", rev = "b21e4f3eeeb95ad85b2effa87ec6441ebad2604c" }
 serde = "1.0"

@@ -370,8 +370,7 @@ dependencies = [
 [[package]]
 name = "hc_utils"
 version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e62667745795af5499892ef6f0cc40de912451f6bd55927e330080b382b10ef2"
+source = "git+https://github.com/alastairong1/hc-utils.git?rev=b21e4f3eeeb95ad85b2effa87ec6441ebad2604c#b21e4f3eeeb95ad85b2effa87ec6441ebad2604c"
 dependencies = [
  "hdk",
  "serde",
