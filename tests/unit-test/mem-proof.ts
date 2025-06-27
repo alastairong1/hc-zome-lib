@@ -7,16 +7,13 @@ test('testing mem-proofs', async (t) => {
 		async (scenario: Scenario) => {
 			let conductor = await scenario.addConductor()
 			let conductor_jch = await scenario.addConductor()
-
 			const jcHapp1 = await installMemProofHapp(conductor_jch)
 			const jcHapp2 = await installMemProofHapp(conductor_jch)
-
 			const [alice_happ, bob_happ] = await installAgentsOnConductor({
 				conductor: conductor,
 				number_of_agents: 2,
 				membraneProofGenerator: jcHapp1,
 			})
-
 			const [alice] = alice_happ.cells
 			const [bob] = bob_happ.cells
 			await scenario.shareAllAgents()

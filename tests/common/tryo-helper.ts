@@ -8,6 +8,8 @@ import { TEST_DNA_PATH, JC_DNA_PATH } from './const.js'
 import { Dictionary } from 'lodash'
 import { Codec } from '@holo-host/cryptolib'
 import * as msgpack from '@msgpack/msgpack'
+import { gzipSync } from 'zlib'
+import { readFileSync } from 'fs'
 
 export const getTimestamp = () => Date.now() * 1000
 
@@ -30,8 +32,35 @@ export type Memproof = {
 }
 
 export const installMemProofHapp = async (c: Conductor) => {
-	const bundle = createHappBundle('jcf', { jcf: { path: JC_DNA_PATH.path } })
-	let appInfo = await c.installApp({ bundle })
+	// Create a HAPP bundle with the DNA file included in resources
+	const dnaBytes = readFileSync(JC_DNA_PATH.path)
+	
+	const bundle: AppBundle = {
+		manifest: {
+			manifest_version: '1',
+			name: 'joining-code-factory',
+			roles: [{
+				name: 'jcf',
+				dna: {
+					bundled: './joining-code-factory.dna'
+				}
+			}],
+			membrane_proofs_deferred: false,
+		},
+		resources: {
+			'./joining-code-factory.dna': dnaBytes
+		}
+	}
+	
+	// Serialize with msgpack then compress with gzip
+	const msgpackBytes = msgpack.encode(bundle)
+	const bundleBytes = gzipSync(msgpackBytes)
+	let appInfo = await c.installApp({
+		appBundleSource: {
+			type: "bytes" as const,
+			value: bundleBytes
+		}
+	})
 	const adminWs = c.adminWs()
 	const port = await c.attachAppInterface()
 	const issued = await adminWs.issueAppAuthenticationToken({
@@ -77,6 +106,10 @@ export const installAgentsOnConductor = async ({
 		// Generate a mem-proof for just created agent
 		let membraneProof
 		if (!!membraneProofGenerator) {
+			console.log('Membrane proof generator agent:', Codec.AgentId.encode(membraneProofGenerator.agentPubKey))
+			console.log('New agent pubkey:', Codec.AgentId.encode(agentPubKey))
+			console.log('Holo agent override:', holo_agent_override ? Codec.AgentId.encode(holo_agent_override) : 'none')
+			
 			const membrane_proof: Memproof = await membraneProofGenerator.cells[0].callZome({
 				zome_name: 'code-generator',
 				fn_name: 'make_proof',
@@ -91,13 +124,35 @@ export const installAgentsOnConductor = async ({
 		}
 
 		agentsApps.push({
-			app: { bundle },
-			agentPubKey,
-			membraneProofs: membraneProof
-				? { "dna-test": membraneProof }
-				: undefined,
-			// installedAppId: string, 	// option to add installed-app-id
-			// networkSeed?: string;	// option to add network-seed
+			appBundleSource: { 
+				type: "path" as const,
+				value: TEST_DNA_PATH.path.replace('.dna', '.happ')
+			},
+			options: {
+				agentPubKey,
+				membraneProofs: membraneProof
+					? { "profile": membraneProof }
+					: undefined,
+				rolesSettings: {
+					"profile": {
+						type: "provisioned" as const,
+						value: {
+							membrane_proof: membraneProof,
+							modifiers: {
+								properties: {
+									not_editable_profile,
+									skip_proof: !membraneProofGenerator,
+									holo_agent_override: holo_agent_override
+										? Codec.AgentId.encode(holo_agent_override)
+										: membraneProofGenerator
+										? Codec.AgentId.encode(membraneProofGenerator?.agentPubKey)
+										: undefined,
+								},
+							},
+						},
+					},
+				},
+			}
 		})
 	}
 	try {
@@ -138,6 +193,7 @@ const createHappBundle = (
 			manifest_version: '1',
 			name,
 			roles: [],
+			membrane_proofs_deferred: false,
 		},
 		resources: {},
 	}
@@ -152,3 +208,4 @@ const createHappBundle = (
 
 	return bundle
 }
+
