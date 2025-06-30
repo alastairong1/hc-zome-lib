@@ -126,5 +126,8 @@ test('test editable profile zomes', async (t) => {
 			console.error('Error: ', e)
 			t.fail()
 		}
+		
+		// Wait for pending requests to complete before cleanup
+		await new Promise(resolve => setTimeout(resolve, 100));
 	})
 })

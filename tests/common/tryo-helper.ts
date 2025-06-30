@@ -81,23 +81,6 @@ export const installAgentsOnConductor = async ({
 	holo_agent_override = undefined,
 }: InstallAgentsOnConductorArgs): Promise<AgentApp[]> => {
 	let agentsApps: any = []
-	const bundle = createHappBundle('test', {
-		'dna-test': {
-			//@ts-ignore
-			path: TEST_DNA_PATH.path,
-			modifiers: {
-				properties: {
-					not_editable_profile,
-					skip_proof: !membraneProofGenerator,
-					holo_agent_override: holo_agent_override
-						? Codec.AgentId.encode(holo_agent_override)
-						: membraneProofGenerator
-						? Codec.AgentId.encode(membraneProofGenerator?.agentPubKey)
-						: undefined,
-				},
-			},
-		},
-	})
 
 	for (let i = 0; i < number_of_agents; i++) {
 		// Manually generates an agent

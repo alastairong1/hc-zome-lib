@@ -54,6 +54,9 @@ test('testing mem-proofs', async (t) => {
 			} catch (e) {
 				t.true(e.message.includes('Joining code invalid: incorrect signature'))
 			}
+			
+			// Wait for pending requests to complete before cleanup
+			await new Promise(resolve => setTimeout(resolve, 100));
 		},
 		true,
 		{ timeout: 300000 }
